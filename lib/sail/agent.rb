@@ -73,8 +73,9 @@ module Sail
       
       to = opts[:to] || room_jid
 
-      ev = data.dup
-      ev['type'] = type
+      ev = {}
+      ev['eventType'] = type
+      ev['payload'] = data.dup
 
       body = ev.to_json
 
@@ -95,7 +96,7 @@ module Sail
         begin
           data = JSON.parse(stanza.body)
           if type
-            return data['type'] && data['type'].to_s == type.to_s
+            return data['eventType'] && data['eventType'].to_s == type.to_s
           else
             return true
           end
@@ -104,7 +105,11 @@ module Sail
         end
       end
     
-      wrapper = Proc.new{|stanza| block.call(stanza, JSON.parse(stanza.body))}
+      wrapper = Proc.new do |stanza|
+        data = JSON.parse(stanza.body)
+        payload = data['payload']
+        block.call(stanza, payload)
+      end
       message(matcher, &wrapper)
     end
 
