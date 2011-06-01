@@ -5,30 +5,31 @@ module Sail
   class Agent
     include Blather::DSL
     
-    attr_accessor :server, :port, :password, :room, :nickname
+    attr_accessor :host, :port, :username, :password, :room, :nickname
     
     def initialize(opts = {})
-      @server   = opts[:server]   || "proto.encorelab.org"
-      # @port     = opts[:port]     || 5275
-      # @password = opts[:password] || "encore!"
-      # @room  =    opts[:room]     || "s3"
-      # @nickname = opts[:nickname] || self.class.name
+      raise ArgumentError, "Missing password!" unless opts[:password]
+      
+      @host     = opts[:host]   || "proto.encorelab.org"
       @port     = opts[:port]     || 5222
-      @password = opts[:password] || "2072eb498b176dd2824d7c21da697bd4a2a26a58"
-      @nickname = opts[:nickname] || self.class.name
-      @room  =    opts[:room]     || "s3"
+      @username = opts[:username] || self.class.name
+      @password = opts[:password]
+      @nickname = opts[:nickname] || @username
+      @room     = opts[:room]     || "s3"
+      
+      setup(agent_jid, password, host, port)
     end
     
-    def my_jid
-      # "#{nickname}.#{server}"
-      nickname.downcase + "@" + server
+    def agent_jid
+      # "#{nickname}.#{host}"
+      username.downcase + "@" + host
     end
     
     def room_jid
-      "#{room}@conference.#{server}"
+      "#{room}@conference.#{host}"
     end
     
-    def my_jid_in_room
+    def agent_jid_in_room
       "#{room_jid}/#{nickname}"
     end
     
@@ -41,13 +42,19 @@ module Sail
     end
     
     def run
-      client.run
+      begin
+        client.run
+      rescue => e
+        EM.stop_event_loop
+        raise e
+      end
     end
     
     def stop
       puts "stopping #{self}..."
       client.clear_handlers(:disconnected)
       client.close
+      EM.stop_event_loop
     end
     
     def run_em
