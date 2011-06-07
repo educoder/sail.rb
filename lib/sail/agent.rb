@@ -1,6 +1,6 @@
 require 'blather/client/dsl'
 require 'json'
-
+require 'ruby-debug'
 module Sail
   class Agent
     include Blather::DSL
@@ -8,12 +8,10 @@ module Sail
     attr_accessor :host, :port, :username, :password, :room, :nickname
     
     def initialize(opts = {})
-      raise ArgumentError, "Missing password!" unless opts[:password]
-      
       @host     = opts[:host]   || "proto.encorelab.org"
       @port     = opts[:port]     || 5222
       @username = opts[:username] || self.class.name
-      @password = opts[:password]
+      @password = opts[:password] || "3deaf4592358b1d837e6eb075bdce10a9438834b" # "Encore agent secret password!"
       @nickname = opts[:nickname] || @username
       @room     = opts[:room]     || "s3"
       
@@ -27,6 +25,23 @@ module Sail
     
     def room_jid
       "#{room}@conference.#{host}"
+    end
+    
+    def log_room_jid
+      return nil unless @groupchat_logger_ready
+      
+      if @log_room_jid
+        @log_room_jid
+      elsif room
+        room_jid
+      else
+        nil
+      end
+    end
+    
+    def groupchat_logger_ready!
+      # TODO: set to false when no longer ready (e.g. disconnected)
+      @groupchat_logger_ready = true
     end
     
     def agent_jid_in_room
@@ -99,7 +114,6 @@ module Sail
       type = type.to_s.gsub(/\?$/,'')
       
       matcher = lambda do |stanza|
-        puts stanza.inspect
         begin
           data = JSON.parse(stanza.body)
           if type
@@ -112,13 +126,66 @@ module Sail
         end
       end
     
-      wrapper = Proc.new do |stanza|
+      wrapper = lambda do |stanza|
         data = JSON.parse(stanza.body)
         payload = data['payload']
+        
+        if stanza.type == :groupchat
+          payload[:from] = stanza.from.resource
+        else
+          payload[:from] = stanza.from.node
+        end
         block.call(stanza, payload)
       end
       message(matcher, &wrapper)
     end
+    
+    def log(log_msg, level = :INFO)
+      puts log_msg
+      
+      room_jid = room_jid || @log_room_jid
+      
+      if log_room_jid
+        msg = Blather::Stanza::Message.new
+        msg.to = log_room_jid
+        msg.type = :groupchat
+        msg.body = "#{level}: #{log_msg}"
 
+        client.write(msg)
+      end
+    end
+
+    class Util
+      def self.jid_pattern
+        /(.*?)@([a-zA-Z0-9\.\-]*)(?:\/(.*?))?/
+      end
+      
+      def self.extract_jid(jid)
+        if jid.kind_of? Blather::JID
+          return {
+            :node => jid.node,
+            :domain => jid.domain,
+            :resource => jid.resource
+          }
+        else
+          parts = jid_pattern.match(jid)
+          return {
+            :node => parts[1],
+            :domain => parts[2],
+            :resource => parts[3]
+          }
+        end
+      end
+      
+      def self.extract_login(str)
+        jid = extract_jid(str)
+        username = jid[:resource] || jid[:node]
+        if username =~ jid_pattern
+          return extract_login(username)
+        else
+          return username
+        end
+      end
+    end
   end
 end
