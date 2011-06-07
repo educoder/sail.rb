@@ -144,6 +144,7 @@ module Sail
           block.call(stanza, payload)
         rescue => e
           log e, :FATAL
+          puts e.backtrace.join("\n\t")
         end
       end
       message(matcher, &wrapper)
