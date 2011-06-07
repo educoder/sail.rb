@@ -18,6 +18,10 @@ module Sail
       setup(agent_jid, password, host, port)
     end
     
+    def vitalize
+      logic
+    end
+    
     def agent_jid
       # "#{nickname}.#{host}"
       username.downcase + "@" + host
@@ -135,7 +139,12 @@ module Sail
         else
           payload[:from] = stanza.from.node
         end
-        block.call(stanza, payload)
+        
+        begin
+          block.call(stanza, payload)
+        rescue => e
+          log e, :FATAL
+        end
       end
       message(matcher, &wrapper)
     end
