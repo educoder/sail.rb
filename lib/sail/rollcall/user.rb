@@ -7,6 +7,6 @@ class Rollcall::User < Rollcall::Base
   end
   
   def to_s
-    "User[#{id}:#{display_name.inspect}]"
+    "User[#{id}:#{account.login.inspect}]"
   end
 end
