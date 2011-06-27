@@ -151,7 +151,8 @@ module Sail
     end
     
     def log(log_msg, level = :INFO)
-      puts log_msg
+      timestamp = "%Y-%m-%dT%H:%M:%S.%L"
+      puts "#{timestamp} [#{level}] #{log_msg}"
       
       room_jid = room_jid || @log_room_jid
       
