@@ -18,8 +18,12 @@ module Sail
       setup(agent_jid, password, host, port)
     end
     
-    def vitalize
-      logic
+    def spawn!
+      behaviour # TODO: consider checking for 'behavior' (american spelling) and execute if present?
+    end
+    
+    def behviour
+      raise NotImplemetedError, "You must implement a `behaviour` method for your agent."
     end
     
     def agent_jid
@@ -115,6 +119,7 @@ module Sail
   
     # Sets up a handler for a Sail event of the given type.
     def event(type = nil, &block)
+      log "Setting up event handler for #{type.inspect}"
       type = type.to_s.gsub(/\?$/,'')
       
       matcher = lambda do |stanza|

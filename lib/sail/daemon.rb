@@ -15,7 +15,7 @@ module Sail
     end
     
     before_start do
-      @agents.each{|a| a.vitalize}
+      @agents.each{|a| a.spawn!}
     end
     
     start do
