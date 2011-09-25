@@ -124,7 +124,7 @@ module Sail
       
       matcher = lambda do |stanza|
         begin
-          data = JSON.parse(stanza.body)
+          data = Util.parse_json(stanza.body)
           if type
             return data['eventType'] && data['eventType'].to_s == type.to_s
           else
@@ -136,17 +136,10 @@ module Sail
       end
     
       wrapper = lambda do |stanza|
-        data = JSON.parse(stanza.body)
-        payload = data['payload']
-        
-        if stanza.type == :groupchat
-          payload[:from] = stanza.from.resource
-        else
-          payload[:from] = stanza.from.node
-        end
+        data = Util.parse_json(stanza.body)
         
         begin
-          block.call(stanza, payload)
+          block.call(stanza, data)
         rescue => e
           log e, :FATAL
           puts e.backtrace.join("\n\t")
@@ -201,6 +194,12 @@ module Sail
         else
           return username
         end
+      end
+      
+      def self.parse_json(json)
+        # FIXME: this is a bandaid for weird UTF-8 decoding issues under Ruby 1.8 (looks like this is not necessary under 1.9)
+        json = json.gsub(/\302\240/,'') if RUBY_VERSION < "1.9"
+        return JSON.parse(json)
       end
     end
   end
