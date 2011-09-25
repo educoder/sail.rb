@@ -156,8 +156,8 @@ module Sail
     end
     
     def log(log_msg, level = :INFO)
-      timestamp = "%Y-%m-%dT%H:%M:%S.%L"
-      puts "#{timestamp} [#{level}] #{log_msg}"
+      timestamp = Time.now.strftime("%Y-%m-%dT%H:%M:%S.%L")
+      puts "#{timestamp} [#{agent_jid_in_room}] [#{level}] #{log_msg}"
       
       room_jid = room_jid || @log_room_jid
       
