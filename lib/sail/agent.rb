@@ -17,6 +17,8 @@ module Sail
       
       @config = config
       
+      log "Initialized #{self} with: #{config.inspect}"
+      
       setup(agent_jid, config[:password], config[:host], config[:port])
     end
     
@@ -90,7 +92,7 @@ module Sail
     end
     
     def to_s
-      "#{self.class.name} Agent"
+      "#{self.class.name}(#{agent_jid})"
     end
 
     # Triggers a Sail event of the given type with the given data.
