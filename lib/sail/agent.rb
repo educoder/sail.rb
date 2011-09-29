@@ -1,21 +1,23 @@
 require 'blather/client/dsl'
 require 'json'
-require 'ruby-debug'
+
 module Sail
   class Agent
     include Blather::DSL
-    
-    attr_accessor :host, :port, :username, :password, :room, :nickname
-    
-    def initialize(opts = {})
-      @host     = opts[:host]   || "proto.encorelab.org"
-      @port     = opts[:port]     || 5222
-      @username = opts[:username] || self.class.name
-      @password = opts[:password] || "3deaf4592358b1d837e6eb075bdce10a9438834b" # "Encore agent secret password!"
-      @nickname = opts[:nickname] || @username
-      @room     = opts[:room]     || "s3"
       
-      setup(agent_jid, password, host, port)
+    attr_accessor :config
+    
+    def initialize(config = {})
+      config[:host]     ||= "proto.encorelab.org"
+      config[:port]     ||= 5222
+      config[:username] ||= self.class.name
+      config[:password] ||= "3deaf4592358b1d837e6eb075bdce10a9438834b" # "Encore agent secret password!"
+      config[:nickname] ||= config[:username]
+      config[:room]     ||= "s3"
+      
+      @config = config
+      
+      setup(agent_jid, config[:password], config[:host], config[:port])
     end
     
     def spawn!
@@ -27,12 +29,11 @@ module Sail
     end
     
     def agent_jid
-      # "#{nickname}.#{host}"
-      username.downcase + "@" + host
+      config[:username].downcase + "@" + config[:host]
     end
     
     def room_jid
-      "#{room}@conference.#{host}"
+      "#{config[:room]}@conference.#{config[:host]}"
     end
     
     def log_room_jid
@@ -53,7 +54,7 @@ module Sail
     end
     
     def agent_jid_in_room
-      "#{room_jid}/#{nickname}"
+      "#{room_jid}/#{config[:nickname]}"
     end
     
     def debug=(debug)
