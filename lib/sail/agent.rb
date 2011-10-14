@@ -8,21 +8,16 @@ module Sail
     attr_accessor :config
     
     def initialize(config = {})
-      config[:host]     ||= "proto.encorelab.org"
       config[:port]     ||= 5222
       config[:username] ||= self.class.name
-      config[:password] ||= "3deaf4592358b1d837e6eb075bdce10a9438834b" # "Encore agent secret password!"
       config[:nickname] ||= config[:username]
-      config[:room]     ||= "s3"
       
       @config = config
-      
-      log "Initialized #{self} with: #{config.inspect}"
-      
-      setup(agent_jid, config[:password], config[:host], config[:port])
     end
     
     def spawn!
+      setup(agent_jid, config[:password], config[:host], config[:port])
+      log "Spawning #{self} with: #{config.inspect}"
       behaviour # TODO: consider checking for 'behavior' (american spelling) and execute if present?
     end
     

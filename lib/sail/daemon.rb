@@ -10,7 +10,21 @@ module Sail
       @agents = []
     end
     
+    def load_config(path)
+      json = File.read(path)
+      @config = JSON.parse(json, :symbolize_names => true)
+      validate_config!
+    end
+    
+    def validate_config!
+      raise "Missing xmpp configuration! Check your config.json..." unless @config[:xmpp]
+      raise "Missing xmpp domain configuration! Check your config.json..." unless @config[:xmpp][:domain]
+      raise "Missing xmpp port configuration! Check your config.json..." unless @config[:xmpp][:domain]
+    end
+    
     def <<(agent)
+      agent.config[:host] = @config[:xmpp][:domain]
+      agent.config[:port] = @config[:xmpp][:port]
       @agents << agent
     end
     
