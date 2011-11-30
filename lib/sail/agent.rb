@@ -116,34 +116,19 @@ module Sail
     end
   
     # Sets up a handler for a Sail event of the given type.
-    def event(type = nil, &block)
-      log "Setting up event handler for #{type.inspect}"
-      type = type.to_s.gsub(/\?$/,'')
-      
-      matcher = lambda do |stanza|
-        begin
-          data = Util.parse_json(stanza.body)
-          if type
-            return data['eventType'] && data['eventType'].to_s == type.to_s
-          else
-            return true
-          end
-        rescue JSON::ParserError
-          return false
-        end
+    # Note that the type can be omitted, in which case this handler
+    # will be triggered for ALL events.
+    def event(*type, &block)
+      if type.nil? || (type.kind_of?(Array) && type.empty?)
+        log "Setting up catch-all event handler..."
+        setup_message_handler(nil, &block) # catch all
+      elsif type.kind_of? Array
+        log "Setting up event handler for multiple events: #{type.inspect}"
+        type.each {|t| setup_message_handler(t, &block) }
+      else
+        log "Setting up event handler for: #{type.inspect}"
+        setup_message_handler(type, &block)
       end
-    
-      wrapper = lambda do |stanza|
-        data = Util.parse_json(stanza.body)
-        
-        begin
-          block.call(stanza, data)
-        rescue => e
-          log e, :FATAL
-          puts e.backtrace.join("\n\t")
-        end
-      end
-      message(matcher, &wrapper)
     end
     
     def log(log_msg, level = :INFO)
@@ -199,6 +184,40 @@ module Sail
         json = json.gsub(/\302\240/,'') if RUBY_VERSION < "1.9"
         return JSON.parse(json)
       end
+    end
+    
+    protected
+    
+    def setup_message_handler(type, &block)
+      type = type.to_s.gsub(/\?$/,'')
+      
+      matcher = lambda do |stanza|
+        log "Running matcher with #{type.inspect}"
+        begin
+          data = Util.parse_json(stanza.body)
+          if type.blank? # type is catch all
+            return true
+          else
+            return data['eventType'] && data['eventType'].to_s == type.to_s
+          end
+        rescue JSON::ParserError
+          log "Couldn't parse JSON: #{stanza.body.inspect}", :WARN
+          return false
+        end
+      end
+  
+      wrapper = lambda do |stanza|
+        data = Util.parse_json(stanza.body)
+      
+        begin
+          block.call(stanza, data)
+        rescue => e
+          log e, :FATAL
+          puts e.backtrace.join("\n\t")
+        end
+      end
+      
+      message(matcher, &wrapper)
     end
   end
 end
