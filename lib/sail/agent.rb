@@ -1,6 +1,8 @@
 require 'blather/client/dsl'
 require 'json'
 
+require 'sail/query'
+
 module Sail
   class Agent
     include Blather::DSL
