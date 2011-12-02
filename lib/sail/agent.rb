@@ -111,6 +111,8 @@ module Sail
       client.write(msg)
     end
   
+    ##### DSL ADDITIONS ####
+    
     # Sets up a handler for a Sail event of the given type.
     # Note that the type can be omitted, in which case this handler
     # will be triggered for ALL events.
@@ -126,6 +128,32 @@ module Sail
         setup_message_handler(type, &block)
       end
     end
+    
+    # TODO: check that this actually works
+    def self_joined_room(&block)
+      presence(:from => Blather::JID.new(agent_jid_in_room), :type => nil, &block)
+    end
+    
+    # TODO: check that this actually works
+    def someone_joined_room(&block)
+      presence(:from => Blather::JID.new(room_jid), :type => nil, &block)
+    end
+    
+    # TODO: check that this actually works
+    def self_left_room(&block)
+      presence(:from => Blather::JID.new(agent_jid_in_room), :type => :unavailable, &block)
+    end
+    
+    # TODO: check that this actually works
+    def someone_joined_room(&block)
+      presence(:from => Blather::JID.new(room_jid), :type => :unavailable, &block)
+    end
+    
+    def self_joined_log_room(&block)
+      presence(:from => Blather::JID.new(agent_jid_in_log_room), :type => nil, &block)
+    end
+    
+    #### END DSL ADDITIONS ####
     
     def log(log_msg, level = :INFO)
       timestamp = Time.now.strftime("%Y-%m-%dT%H:%M:%S.%L")
