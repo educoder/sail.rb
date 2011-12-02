@@ -170,6 +170,17 @@ module Sail
         client.write(msg)
       end
     end
+    
+    def join_room
+      pres = Blather::Stanza::Presence::Status.new
+      pres.to = agent_jid_in_room
+      pres.state = :chat
+      
+      log "Joining #{agent_jid_in_room.inspect}..."
+      
+      client.write(pres)
+    end
+    
     def join_log_room
       pres = Blather::Stanza::Presence::Status.new
       pres.to = agent_jid_in_log_room
