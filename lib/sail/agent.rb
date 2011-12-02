@@ -34,15 +34,7 @@ module Sail
     end
     
     def log_room_jid
-      return nil unless @groupchat_logger_ready
-      
-      if @log_room_jid
-        @log_room_jid
-      elsif room
-        room_jid
-      else
-        nil
-      end
+        @log_room_jid || "#{config[:room]}-log@conference.#{config[:host]}"
     end
     
     def groupchat_logger_ready!
@@ -52,6 +44,10 @@ module Sail
     
     def agent_jid_in_room
       "#{room_jid}/#{config[:nickname]}"
+    end
+    
+    def agent_jid_in_log_room
+      "#{log_room_jid}/#{config[:nickname]}"
     end
     
     def debug=(debug)
@@ -135,9 +131,7 @@ module Sail
       timestamp = Time.now.strftime("%Y-%m-%dT%H:%M:%S.%L")
       puts "#{timestamp} [#{agent_jid_in_room}] [#{level}] #{log_msg}"
       
-      room_jid = room_jid || @log_room_jid
-      
-      if log_room_jid
+      if @groupchat_logger_ready
         msg = Blather::Stanza::Message.new
         msg.to = log_room_jid
         msg.type = :groupchat
@@ -145,6 +139,15 @@ module Sail
 
         client.write(msg)
       end
+    end
+    def join_log_room
+      pres = Blather::Stanza::Presence::Status.new
+      pres.to = agent_jid_in_log_room
+      pres.state = :chat
+      
+      log "Joining #{agent_jid_in_log_room.inspect}..."
+      
+      client.write(pres)
     end
 
     class Util
