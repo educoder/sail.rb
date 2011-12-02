@@ -20,6 +20,12 @@ module Sail
     def spawn!
       setup(agent_jid, config[:password], config[:host], config[:port])
       log "Spawning #{self} with: #{config.inspect}"
+      
+      # put this in "default_behaviour" or something
+      message :type => :error do |stanza|
+        log stanza, :ERROR
+      end
+      
       behaviour # TODO: consider checking for 'behavior' (american spelling) and execute if present?
     end
     
