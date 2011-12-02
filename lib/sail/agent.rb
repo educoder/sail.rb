@@ -107,7 +107,7 @@ module Sail
 
       msg = Blather::Stanza::Message.new
       msg.to = to
-      msg.type = :groupchat unless opts[:to]
+      msg.type = :groupchat unless opts[:to] # if explicit :to was given, then this event is to be delivered as a private message
       msg.body = body
 
       client.write(msg)
@@ -119,15 +119,15 @@ module Sail
     # Note that the type can be omitted, in which case this handler
     # will be triggered for ALL events.
     def event(*type, &block)
-      if type.nil? || (type.kind_of?(Array) && type.empty?)
+      if type.nil? || type.empty?
         log "Setting up catch-all event handler..."
-        setup_message_handler(nil, &block) # catch all
-      elsif type.kind_of? Array
-        log "Setting up event handler for multiple events: #{type.inspect}"
-        type.each {|t| setup_message_handler(t, &block) }
-      else
+        setup_event_handler(nil, &block) # catch all
+      elsif type.length == 1
         log "Setting up event handler for: #{type.inspect}"
-        setup_message_handler(type, &block)
+        setup_event_handler(type, &block)
+      else
+        log "Setting up event handler for multiple events: #{type.inspect}"
+        type.each {|t| setup_event_handler(t, &block) }
       end
     end
     
@@ -232,11 +232,15 @@ module Sail
     
     protected
     
-    def setup_message_handler(type, &block)
+    def setup_event_handler(type, &block)
       type = type.to_s.gsub(/\?$/,'')
       
       matcher = lambda do |stanza|
-        log "Running matcher with #{type.inspect}"
+        if stanza.from.stripped == Blather::JID.new(log_room_jid).stripped
+          # ignore messages in the log room
+          return false
+        end
+        
         begin
           data = Util.parse_json(stanza.body)
           if type.blank? # type is catch all
