@@ -144,7 +144,7 @@ module Sail
     
     # TODO: check that this actually works
     def someone_joined_room(&block)
-      presence(:from => Blather::JID.new(room_jid), :type => nil, &block)
+      presence(:from => Regexp.new("^#{room_jid}/.*"), :type => nil, &block)
     end
     
     # TODO: check that this actually works
@@ -153,8 +153,8 @@ module Sail
     end
     
     # TODO: check that this actually works
-    def someone_joined_room(&block)
-      presence(:from => Blather::JID.new(room_jid), :type => :unavailable, &block)
+    def someone_left_room(&block)
+      presence(:from => Regexp.new("^"+Blather::JID.new(room_jid).to_s+".*"), :type => :unavailable, &block)
     end
     
     def self_joined_log_room(&block)
