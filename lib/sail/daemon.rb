@@ -25,6 +25,7 @@ module Sail
     def <<(agent)
       agent.config[:host] = @config[:xmpp][:domain]
       agent.config[:port] = @config[:xmpp][:port]
+      agent.config[:sail] = @config
       @agents << agent
     end
     
