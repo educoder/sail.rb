@@ -30,16 +30,34 @@ module Sail
     end
     
     before_start do
-      @agents.each{|a| a.spawn!}
+      _before_start
     end
     
     start do
+      _start
+    end
+    
+    stop do
+      _stop
+    end
+    
+    def start_interactive
+      _before_start
+      _start
+      #_stop
+    end
+    
+    def _before_start
+      @agents.each{|a| a.spawn!}
+    end
+    
+    def _start
       trap(:INT) { @agents.each{|a| a.stop}; EM.stop }
       trap(:TERM) { @agents.each{|a| a.stop}; EM.stop }
       EM.run { @agents.each{|a| a.run} }
     end
     
-    stop do
+    def _stop
       @agents.each{|a| a.stop }
       EM.stop_event_loop
     end
