@@ -103,11 +103,15 @@ module Sail
     def event!(type, data, opts = {})
       raise ArgumentError, "'data' must be a Hash!" unless data.kind_of?(Hash)
       
+      opts.symbolize_keys!
+      
       to = opts[:to] || room_jid
 
       ev = {}
       ev['eventType'] = type
       ev['payload'] = data.dup
+      ev['origin'] = opts[:origin] || config[:username]
+      ev['timestamp'] = opts[:timestamp] || Time.now 
 
       body = ev.to_json
 
