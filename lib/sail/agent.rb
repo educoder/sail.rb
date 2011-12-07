@@ -259,7 +259,7 @@ module Sail
             return data['eventType'] && data['eventType'].to_s == type.to_s
           end
         rescue JSON::ParserError
-          log "Couldn't parse JSON: #{stanza.body.inspect}", :WARN
+          log "Couldn't parse JSON for event handler #{type.inspect}: #{stanza.body.inspect}", :WARN
           return false
         end
       end
