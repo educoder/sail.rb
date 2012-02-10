@@ -9,12 +9,17 @@ module Sail
       
     attr_accessor :config
     
+    attr_accessor :log_to
+    attr_accessor :catch_event_exceptions
+    
     def initialize(config = {})
       config[:port]     ||= 5222
       config[:username] ||= self.class.name
       config[:nickname] ||= config[:username]
       
       @config = config
+      @log_to = $stdout
+      @catch_event_exceptions = true
     end
     
     def spawn!
@@ -104,13 +109,14 @@ module Sail
       raise ArgumentError, "'data' must be a Hash!" unless data.kind_of?(Hash)
       
       opts.symbolize_keys!
+      data.symbolize_keys!
       
       to = opts[:to] || room_jid
 
       ev = {}
       ev['eventType'] = type
       ev['payload'] = data.dup
-      ev['origin'] = opts[:origin] || config[:username]
+      ev['origin'] = opts[:origin] || config[:nickname] || config[:username]
       ev['timestamp'] = opts[:timestamp] || Time.now 
 
       body = ev.to_json
@@ -121,6 +127,11 @@ module Sail
       msg.body = body
 
       client.write(msg)
+    end
+    
+    def onetime_event(*type, &block)
+      log "Setting up onetime event handler for: #{type.inspect}"
+      setup_event_handler(type, true, &block)
     end
   
     ##### DSL ADDITIONS ####
@@ -169,7 +180,8 @@ module Sail
     
     def log(log_msg, level = :INFO)
       timestamp = Time.now.strftime("%Y-%m-%dT%H:%M:%S.%L")
-      puts "#{timestamp} [#{agent_jid_in_room}] [#{level}] #{log_msg}"
+      @log_to.puts "#{timestamp} [#{agent_jid_in_room}] [#{level}] #{log_msg}"
+      @log_to.flush
       
       if @groupchat_logger_ready
         msg = Blather::Stanza::Message.new
@@ -242,7 +254,7 @@ module Sail
     
     protected
     
-    def setup_event_handler(type, &block)
+    def setup_event_handler(type, onetime = false, &block)
       type = type.to_s.gsub(/\?$/,'')
       
       matcher = lambda do |stanza|
@@ -265,13 +277,26 @@ module Sail
       end
   
       wrapper = lambda do |stanza|
+        if onetime
+          # unregister
+          client.instance_eval do
+            @handlers[:message].delete_if { |g, _| g.first === matcher }
+          end
+        end
+        
         data = Util.parse_json(stanza.body)
       
         begin
           block.call(stanza, data)
-        rescue => e
+        rescue => e          
           log e, :FATAL
-          puts e.backtrace.join("\n\t")
+          if @catch_event_exceptions
+            # FIXME: don't do this... this ignores @log_to. Not sure what else to do with it though.
+            $stderr.puts e
+            $stderr.puts e.backtrace.join("\n\t")
+          else
+            raise e
+          end
         end
       end
       
