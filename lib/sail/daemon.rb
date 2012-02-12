@@ -1,9 +1,11 @@
 require 'rubygems'
 require 'pidly'
-
+require 'json'
 
 module Sail
   class Daemon < Pidly::Control
+    
+    attr_accessor :config
     
     def initialize(*args)
       super(*args)
