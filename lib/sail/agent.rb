@@ -12,6 +12,8 @@ module Sail
     attr_accessor :log_to
     attr_accessor :catch_event_exceptions
     
+    attr_reader :registered_events
+    
     def initialize(config = {})
       config[:port]     ||= 5222
       config[:username] ||= self.class.name
@@ -20,6 +22,8 @@ module Sail
       @config = config
       @log_to = $stdout
       @catch_event_exceptions = true
+      
+      @registered_events = []
     end
     
     def spawn!
@@ -280,8 +284,11 @@ module Sail
         if onetime
           # unregister
           client.instance_eval do
-            @handlers[:message].delete_if { |g, _| g.first === matcher }
+            @handlers[:message].delete_if {|g, _| g.first === matcher}
           end
+          @registered_events.delete_if{|ev|
+            ev[:type] === type && ev[:handler] === block && 
+            ev[:onetime] == onetime && ev[:mater] == matcher }
         end
         
         data = Util.parse_json(stanza.body)
@@ -299,6 +306,14 @@ module Sail
           end
         end
       end
+      
+      @registered_events << {
+        :type => type,
+        :handler => block,
+        :wrapped_handler => wrapper,
+        :matcher => matcher,
+        :onetime => onetime
+      }
       
       message(matcher, &wrapper)
     end
