@@ -219,7 +219,7 @@ module Sail
 
     class Util
       def self.jid_pattern
-        /(.*?)@([a-zA-Z0-9\.\-]*)(?:\/(.*?))?/
+        /(.*?)@([a-zA-Z0-9\.\-]*)(?:\/(.*))?/
       end
       
       def self.extract_jid(jid)
@@ -243,7 +243,9 @@ module Sail
         jid = extract_jid(str)
         username = jid[:resource] || jid[:node]
         if username =~ jid_pattern
-          return extract_login(username)
+          # resource was actually a full jid (happens in prosody, for example)
+          jid2 = extract_jid(username)
+          return jid2[:node]
         else
           return username
         end
