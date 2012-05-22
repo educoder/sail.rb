@@ -261,7 +261,7 @@ module Sail
     protected
     
     def setup_event_handler(type, onetime = false, &block)
-      unless type.kind_of?(Symbol) || type.kind_of?(String)
+      unless type.nil? || type.kind_of?(Symbol) || type.kind_of?(String)
         raise ArgumentError, "Event type must be a string or symbol but is: #{type.inspect} (#{type.class})" 
       end
         
