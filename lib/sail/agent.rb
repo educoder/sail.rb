@@ -149,7 +149,7 @@ module Sail
         setup_event_handler(nil, &block) # catch all
       elsif type.length == 1
         log "Setting up event handler for: #{type.inspect}"
-        setup_event_handler(type, &block)
+        setup_event_handler(type.first, &block)
       else
         log "Setting up event handler for multiple events: #{type.inspect}"
         type.each {|t| setup_event_handler(t, &block) }
@@ -261,6 +261,10 @@ module Sail
     protected
     
     def setup_event_handler(type, onetime = false, &block)
+      unless type.kind_of?(Symbol) || type.kind_of?(String)
+        raise ArgumentError, "Event type must be a string or symbol but is: #{type.inspect} (#{type.class})" 
+      end
+        
       type = type.to_s.gsub(/\?$/,'')
       
       matcher = lambda do |stanza|
