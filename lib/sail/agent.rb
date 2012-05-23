@@ -112,8 +112,13 @@ module Sail
     def event!(type, data, opts = {})
       raise ArgumentError, "'data' must be a Hash!" unless data.kind_of?(Hash)
       
-      opts.symbolize_keys!
-      data.symbolize_keys!
+      # doesn't seem to work in ruby 1.9
+      #opts.symbolize_keys!
+      #data.symbolize_keys!
+
+      # for now just do this ugliness to symbolize_keys
+      opts.inject({}){|memo,(k,v)| memo[k.to_sym] = v; memo}
+      data.inject({}){|memo,(k,v)| memo[k.to_sym] = v; memo}
       
       to = opts[:to] || room_jid
 
