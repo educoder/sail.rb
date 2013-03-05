@@ -112,13 +112,8 @@ module Sail
     def event!(type, data, opts = {})
       raise ArgumentError, "'data' must be a Hash!" unless data.kind_of?(Hash)
       
-      # doesn't seem to work in ruby 1.9
-      #opts.symbolize_keys!
-      #data.symbolize_keys!
-
-      # for now just do this ugliness to symbolize_keys
-      opts.inject({}){|memo,(k,v)| memo[k.to_sym] = v; memo}
-      data.inject({}){|memo,(k,v)| memo[k.to_sym] = v; memo}
+      opts.symbolize_keys!
+      data.symbolize_keys!
       
       to = opts[:to] || room_jid
 
@@ -259,7 +254,23 @@ module Sail
       def self.parse_json(json)
         # FIXME: this is a bandaid for weird UTF-8 decoding issues under Ruby 1.8 (looks like this is not necessary under 1.9)
         json = json.gsub(/\302\240/,'') if RUBY_VERSION < "1.9"
-        return JSON.parse(json)
+        data = JSON.parse(json)
+
+        data = parse_bson_dates(data)
+
+        return data
+      end
+
+      def self.parse_bson_dates(data)
+        data.each do |k,v|
+          if v.is_a? Hash
+            if v['$date']
+              data[k] = Time.parse v['$date']
+            else
+              data[k] = parse_bson_dates data[k]
+            end
+          end
+        end
       end
     end
     
